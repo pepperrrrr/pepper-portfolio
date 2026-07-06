@@ -296,15 +296,17 @@ section { position: relative; }
   justify-content: center;
 }
 
-/* huge ghost index behind everything */
+/* huge ghost index — outlined numeral that floats over the top of the image
+   (transparent fill, so it never hides the shot beneath it) */
 .idx {
   position: absolute;
-  top: 4vh;
+  top: 3vh;
   inset-inline-start: clamp(0.5rem, 4vw, 4rem);
-  font-size: clamp(7rem, 24vw, 22rem);
+  z-index: 2; /* sit in front of .shot so the numeral is never clipped */
+  font-size: clamp(6rem, 20vw, 18rem);
   line-height: 1;
   color: transparent;
-  -webkit-text-stroke: 1px color-mix(in srgb, var(--accent) 50%, var(--line));
+  -webkit-text-stroke: 1.4px color-mix(in srgb, var(--accent) 70%, transparent);
   user-select: none;
   pointer-events: none;
 }

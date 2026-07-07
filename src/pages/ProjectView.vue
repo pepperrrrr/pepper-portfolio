@@ -27,7 +27,7 @@ const next = computed(() => {
       <p class="subtitle" v-reveal="70">{{ t(`projects.items.${project.slug}.subtitle`) }}</p>
     </header>
 
-    <dl class="meta" v-reveal>
+    <dl class="meta glass" v-reveal>
       <div class="meta-cell">
         <dt class="t-label">{{ t('projects.labels.year') }}</dt>
         <dd>{{ project.year }}</dd>
@@ -42,9 +42,11 @@ const next = computed(() => {
       </div>
     </dl>
 
-    <div class="shot reveal-clip" v-reveal>
-      <img v-if="project.image" :src="project.image" :alt="t(`projects.items.${project.slug}.title`)" />
-      <div v-else class="shot-type"><span dir="rtl">سوق</span></div>
+    <div class="shot glass reveal-clip" v-reveal>
+      <span class="shot-clip">
+        <img v-if="project.image" :src="project.image" :alt="t(`projects.items.${project.slug}.title`)" />
+        <span v-else class="shot-type"><span dir="rtl">سوق</span></span>
+      </span>
     </div>
 
     <div class="copy">
@@ -61,16 +63,16 @@ const next = computed(() => {
       </section>
 
       <div class="actions" v-reveal>
-        <a v-if="project.demo" :href="project.demo" target="_blank" rel="noopener" class="link-line act">
+        <a v-if="project.demo" :href="project.demo" target="_blank" rel="noopener" class="act glass">
           {{ t('projects.liveDemo') }} ↗
         </a>
-        <a :href="project.link" target="_blank" rel="noopener" class="link-line act">
+        <a :href="project.link" target="_blank" rel="noopener" class="act glass">
           {{ t('projects.viewCode') }} ↗
         </a>
       </div>
     </div>
 
-    <RouterLink v-if="next" :to="{ name: 'project', params: { slug: next.slug } }" class="next">
+    <RouterLink v-if="next" :to="{ name: 'project', params: { slug: next.slug } }" class="next glass">
       <span class="t-label">{{ t('common.next') }}</span>
       <span class="next-name t-display">{{ t(`projects.items.${next.slug}.title`) }} →</span>
     </RouterLink>
@@ -118,15 +120,16 @@ const next = computed(() => {
 .meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 0.4rem;
   margin-bottom: 3.5rem;
 }
 
 .meta-cell {
-  padding: 1.4rem clamp(0.5rem, 2vw, 1.5rem) 1.4rem 0;
+  padding: 1.2rem clamp(1rem, 2vw, 1.5rem);
+  border-inline-start: 1px solid var(--line);
 }
-[dir='rtl'] .meta-cell { padding: 1.4rem 0 1.4rem clamp(0.5rem, 2vw, 1.5rem); }
+.meta-cell:first-child { border-inline-start: 0; }
 
 .meta-cell dd {
   margin: 0.5rem 0 0;
@@ -135,10 +138,19 @@ const next = computed(() => {
 }
 
 .shot {
-  overflow: hidden;
-  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 10px; /* glass frame */
   margin-bottom: 4.5rem;
-  box-shadow: 0 40px 140px -30px color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--glass-hi),
+    var(--glass-shadow),
+    0 40px 140px -30px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.shot-clip {
+  display: block;
+  overflow: hidden;
+  border-radius: calc(var(--r-lg) - 10px);
 }
 
 .shot img { width: 100%; display: block; }
@@ -191,7 +203,14 @@ const next = computed(() => {
   margin-top: 2.5rem;
 }
 
-.act { font-weight: 600; font-size: 0.95rem; }
+.act {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--r-pill);
+  transition: transform 0.3s var(--ease), color 0.3s;
+}
+.act:hover { transform: translateY(-2px); color: var(--accent); }
 
 .next {
   display: flex;
@@ -199,11 +218,13 @@ const next = computed(() => {
   gap: 0.8rem;
   align-items: flex-start;
   margin-top: 8rem;
-  padding-top: 3rem;
-  border-top: 1px solid var(--line);
-  transition: opacity 0.4s;
+  padding: 2.2rem clamp(1.4rem, 3vw, 2.5rem) 2.5rem;
+  border-radius: var(--r-lg);
+  transition: transform 0.4s var(--ease);
 }
-.next:hover { opacity: 0.6; }
+.next:hover { transform: translateY(-3px); }
+.next:hover .next-name { color: var(--accent); }
+.next-name { transition: color 0.4s; }
 
 .next-name { font-size: clamp(2.2rem, 7vw, 5.5rem); }
 

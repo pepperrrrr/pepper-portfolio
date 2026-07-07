@@ -138,7 +138,7 @@ onMounted(() => {
     </header>
 
     <!-- Lock screen -->
-    <form v-if="!unlocked" class="lock" @submit.prevent="unlock">
+    <form v-if="!unlocked" class="lock glass" @submit.prevent="unlock">
       <p class="lock-prompt">{{ t('ideas.lockPrompt') }}</p>
       <div class="lock-row">
         <input v-model="passInput" type="password" class="add-input" :placeholder="t('ideas.passcode')"
@@ -153,7 +153,7 @@ onMounted(() => {
 
     <!-- The sky -->
     <template v-else>
-      <div class="sky" v-reveal>
+      <div class="sky glass" v-reveal>
         <svg v-if="ideas.length > 1" class="lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           <polyline :points="points" />
         </svg>
@@ -166,7 +166,7 @@ onMounted(() => {
         <p v-else-if="!ideas.length" class="empty-msg">{{ t('ideas.empty') }}</p>
       </div>
 
-      <div v-if="selected" class="detail">
+      <div v-if="selected" class="detail glass">
         <span class="t-label">{{ df.format(selected.date) }}</span>
         <p class="detail-text">{{ selected.text }}</p>
         <button class="link-line detail-del" :disabled="busy" @click="remove(selected.id)">{{ t('ideas.remove') }}</button>
@@ -211,13 +211,13 @@ onMounted(() => {
 /* ---------- lock screen ---------- */
 .lock {
   max-width: 34rem;
-  padding: 3rem 0 6rem;
-  border-top: 1px solid var(--line);
+  padding: 2.4rem 2.2rem 2.6rem;
+  border-radius: var(--r-lg);
 }
 
 .lock-prompt {
   color: var(--fg-soft);
-  margin: 2rem 0 1.4rem;
+  margin-bottom: 1.4rem;
 }
 
 .lock-row {
@@ -235,12 +235,11 @@ onMounted(() => {
 
 .feed-err { margin: 1rem 0 0; }
 
-/* ---------- the sky ---------- */
+/* ---------- the sky: one large glass pane over the cosmos ---------- */
 .sky {
   position: relative;
   height: min(62vh, 640px);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-radius: var(--r-lg);
   overflow: hidden;
 }
 
@@ -340,8 +339,9 @@ onMounted(() => {
   align-items: baseline;
   gap: 1.4rem;
   flex-wrap: wrap;
-  padding: 1.6rem 0;
-  border-bottom: 1px solid var(--line);
+  margin-top: 1.4rem;
+  padding: 1.3rem 1.6rem;
+  border-radius: var(--r-md);
 }
 
 .detail-text {
@@ -375,35 +375,41 @@ onMounted(() => {
 
 .add-input {
   flex: 1;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-pill);
+  box-shadow: inset 0 1px 0 var(--glass-hi);
   color: var(--fg);
   font-family: inherit;
-  font-size: 1.05rem;
-  padding: 0.7rem 0;
+  font-size: 1rem;
+  padding: 0.7rem 1.2rem;
   transition: border-color 0.3s;
 }
 
 .add-input:focus {
   outline: none;
-  border-bottom-color: var(--fg-soft);
+  border-color: var(--fg-soft);
 }
 
 .add-input::placeholder { color: var(--fg-mute); }
 .add-input:disabled { opacity: 0.5; }
 
 .add-btn {
-  background: transparent;
-  border: 0;
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-pill);
+  box-shadow: inset 0 1px 0 var(--glass-hi);
   color: var(--fg);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
-  padding-block: 0.7rem;
+  padding: 0.7rem 1.4rem;
   white-space: nowrap;
+  transition: transform 0.3s var(--ease), border-color 0.3s;
 }
+
+.add-btn:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--fg-soft); }
 
 .add-btn:disabled {
   color: var(--fg-mute);

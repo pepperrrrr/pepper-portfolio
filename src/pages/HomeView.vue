@@ -66,19 +66,21 @@ onBeforeUnmount(() => removeEventListener('scroll', onScroll))
     </p>
   </section>
 
-  <!-- Chapter 2 — proof in numbers -->
+  <!-- Chapter 2 — proof in numbers, one shared glass bar -->
   <section class="stats" v-reveal>
-    <div v-for="k in statKeys" :key="k" class="stat">
-      <span class="stat-v t-display">{{ t(`stats.${k}.v`) }}</span>
-      <span class="stat-l">{{ t(`stats.${k}.l`) }}</span>
+    <div class="stats-bar glass">
+      <div v-for="k in statKeys" :key="k" class="stat">
+        <span class="stat-v t-display">{{ t(`stats.${k}.v`) }}</span>
+        <span class="stat-l">{{ t(`stats.${k}.l`) }}</span>
+      </div>
     </div>
   </section>
 
-  <!-- Chapter 3 — capabilities -->
+  <!-- Chapter 3 — capabilities on accent-lit glass panes -->
   <section class="caps">
     <p class="t-label caps-label" v-reveal>{{ t('caps.label') }}</p>
     <div class="caps-grid">
-      <div v-for="(c, i) in caps" :key="c.key" class="cap" :style="{ '--accent': c.accent }" v-reveal="i * 90">
+      <div v-for="(c, i) in caps" :key="c.key" class="cap glass" :style="{ '--accent': c.accent }" v-reveal="i * 90">
         <span class="cap-n t-display">{{ String(i + 1).padStart(2, '0') }}</span>
         <h3 class="cap-t">{{ t(`caps.${c.key}.t`) }}</h3>
         <p class="cap-d">{{ t(`caps.${c.key}.d`) }}</p>
@@ -94,11 +96,13 @@ onBeforeUnmount(() => removeEventListener('scroll', onScroll))
       :style="{ '--accent': p.accent }">
       <span class="idx t-display" aria-hidden="true">{{ String(i + 1).padStart(2, '0') }}</span>
 
-      <RouterLink :to="{ name: 'project', params: { slug: p.slug } }" class="shot reveal-clip" v-reveal
+      <RouterLink :to="{ name: 'project', params: { slug: p.slug } }" class="shot glass reveal-clip" v-reveal
         :aria-label="t(`projects.items.${p.slug}.title`)">
-        <img v-if="p.image" :src="p.image" :alt="t(`projects.items.${p.slug}.title`)" loading="lazy" data-parallax />
-        <!-- Souq has no public screenshot: type itself becomes the image -->
-        <div v-else class="shot-type" data-parallax><span dir="rtl">سوق</span></div>
+        <span class="shot-clip">
+          <img v-if="p.image" :src="p.image" :alt="t(`projects.items.${p.slug}.title`)" loading="lazy" data-parallax />
+          <!-- Souq has no public screenshot: type itself becomes the image -->
+          <span v-else class="shot-type" data-parallax><span dir="rtl">سوق</span></span>
+        </span>
       </RouterLink>
 
       <div class="proj-copy">
@@ -214,21 +218,26 @@ section { position: relative; }
 
 /* ---------- stats ---------- */
 .stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0;
   width: min(100%, 1240px);
   margin: 0 auto;
   padding: 6vh clamp(1.2rem, 6vw, 6rem) 10vh;
+}
+
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  border-radius: var(--r-lg);
+  padding: 0.5rem;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 2rem clamp(1rem, 2vw, 2rem);
+  padding: 1.8rem clamp(1.2rem, 2vw, 2rem);
   border-inline-start: 1px solid var(--line);
 }
+.stat:first-child { border-inline-start: 0; }
 
 .stat-v {
   font-size: clamp(1.7rem, 3.4vw, 2.8rem);
@@ -256,8 +265,12 @@ section { position: relative; }
 }
 
 .cap {
-  border-top: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
-  padding-top: 1.8rem;
+  border-radius: var(--r-lg);
+  padding: 1.8rem 1.7rem 2rem;
+  /* accent-tinted specular edge: each pane is lit by its own colour */
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 55%, var(--glass-hi)),
+    var(--glass-shadow);
 }
 
 .cap-n {
@@ -320,10 +333,21 @@ section { position: relative; }
   width: min(100%, 1240px);
   margin-inline: auto;
   aspect-ratio: 16 / 9.5;
+  border-radius: var(--r-lg);
+  padding: 10px; /* the glass frame around the picture */
+  /* specular edge + chapter-coloured glow */
+  box-shadow:
+    inset 0 1px 0 var(--glass-hi),
+    var(--glass-shadow),
+    0 40px 140px -30px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.shot-clip {
+  position: absolute;
+  inset: 10px;
+  display: block;
   overflow: hidden;
-  background: var(--surface);
-  /* each chapter glows in its own colour */
-  box-shadow: 0 40px 140px -30px color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: calc(var(--r-lg) - 10px);
 }
 
 .shot img,
@@ -347,7 +371,6 @@ section { position: relative; }
   font-weight: 800;
   font-size: clamp(6rem, 22vw, 19rem);
   color: var(--fg);
-  background: var(--surface);
 }
 
 .proj-copy {
@@ -446,6 +469,7 @@ section { position: relative; }
 @media (max-width: 720px) {
   .proj { min-height: auto; padding-top: 18vh; }
   .proj-copy, .proj.alt .proj-copy { margin-inline: 0; max-width: none; }
-  .stat { border-inline-start: 0; border-top: 1px solid var(--line); padding-inline: 0; }
+  .stat { border-inline-start: 0; border-top: 1px solid var(--line); }
+  .stat:first-child { border-top: 0; }
 }
 </style>

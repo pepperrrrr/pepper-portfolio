@@ -54,14 +54,16 @@ onMounted(applyTheme)
   <!-- Cats are a hidden easter egg — type "cat" to summon them -->
   <Cats v-if="showCats" />
 
-  <!-- White text + difference blend = header auto-inverts over any backdrop -->
-  <header class="site-header">
-    <RouterLink :to="{ name: 'home' }" class="brand">{{ t('hero.name') }}</RouterLink>
+  <!-- Floating glass dock — refracts the particle field as the page scrolls -->
+  <header class="dock glass">
+    <RouterLink :to="{ name: 'home' }" class="brand"><span class="brand-full">{{ t('hero.name') }}</span><span
+        class="brand-mono" aria-hidden="true">P</span></RouterLink>
     <nav class="nav">
-      <RouterLink :to="{ name: 'home' }" class="link-line">{{ t('nav.home') }}</RouterLink>
-      <RouterLink :to="{ name: 'ideas' }" class="link-line">{{ t('nav.ideas') }}</RouterLink>
-      <RouterLink :to="{ name: 'about' }" class="link-line">{{ t('nav.about') }}</RouterLink>
+      <RouterLink :to="{ name: 'home' }">{{ t('nav.home') }}</RouterLink>
+      <RouterLink :to="{ name: 'ideas' }">{{ t('nav.ideas') }}</RouterLink>
+      <RouterLink :to="{ name: 'about' }">{{ t('nav.about') }}</RouterLink>
     </nav>
+    <i class="dock-sep" aria-hidden="true"></i>
     <div class="controls">
       <button class="ctl" @click="toggleTheme" aria-label="Toggle theme" :aria-pressed="theme === 'dark'">◐</button>
       <button v-for="l in languages" :key="l.code" class="ctl" :class="{ active: locale === l.code }"
@@ -90,63 +92,81 @@ onMounted(applyTheme)
   z-index: 1;
 }
 
-.site-header {
+.dock {
   position: fixed;
-  inset-inline: 0;
-  top: 0;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 30;
   display: flex;
   align-items: center;
-  gap: clamp(1.2rem, 3vw, 2.4rem);
-  padding: clamp(1.1rem, 2.5vw, 1.8rem) clamp(1.2rem, 5vw, 4rem);
-  color: #fff;
-  mix-blend-mode: difference;
+  gap: clamp(0.9rem, 2vw, 1.5rem);
+  padding: 0.55rem 0.6rem 0.55rem 1.1rem;
+  border-radius: var(--r-pill);
+  color: var(--fg);
+  max-width: calc(100vw - 20px);
 }
+[dir='rtl'] .dock { padding: 0.55rem 1.1rem 0.55rem 0.6rem; }
 
 .brand {
   font-family: var(--display);
   font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.14em;
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-[dir='rtl'] .brand { letter-spacing: 0.04em; }
+[dir='rtl'] .brand { letter-spacing: 0.03em; }
+.brand-mono { display: none; }
 
-.nav {
-  display: flex;
-  gap: clamp(1.1rem, 2.5vw, 2rem);
-  margin-inline-start: auto;
-}
+.nav { display: flex; gap: clamp(0.2rem, 1vw, 0.4rem); }
 
 .nav a {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  opacity: 0.68;
-  transition: opacity 0.3s;
+  color: var(--fg-soft);
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--r-pill);
+  transition: color 0.3s, background 0.3s;
 }
-[dir='rtl'] .nav a { letter-spacing: 0.03em; }
+[dir='rtl'] .nav a { letter-spacing: 0.02em; }
 
-.nav a:hover,
-.nav a.router-link-active { opacity: 1; }
+.nav a:hover { color: var(--fg); }
 
-.controls { display: flex; gap: 0.15rem; }
+/* the active page sits on its own inner glass pill */
+.nav a.router-link-active {
+  color: var(--fg);
+  background: var(--surface);
+  box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 0 0 1px var(--stroke);
+}
+
+.dock-sep {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--stroke);
+}
+
+.controls { display: flex; gap: 0.1rem; }
 
 .ctl {
   border: 0;
   background: transparent;
-  color: #fff;
+  color: var(--fg-mute);
   font-family: inherit;
-  font-size: 0.8rem;
-  padding: 0.25rem 0.45rem;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--r-pill);
   cursor: pointer;
-  opacity: 0.55;
-  transition: opacity 0.3s;
+  transition: color 0.3s, background 0.3s;
 }
 
-.ctl:hover { opacity: 1; }
-.ctl.active { opacity: 1; text-decoration: underline; text-underline-offset: 5px; }
+.ctl:hover { color: var(--fg); }
+.ctl.active {
+  color: var(--fg);
+  background: var(--surface);
+  box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 0 0 1px var(--stroke);
+}
 
 .site-footer {
   position: relative;
@@ -173,17 +193,15 @@ onMounted(applyTheme)
   .page-leave-active { transition: none; }
 }
 
-/* Narrow screens: tighten every gap so all three languages and the theme
-   toggle stay reachable — nothing may fall off the edge */
+/* Narrow screens: the brand collapses to a monogram and every gap tightens
+   so all three languages and the theme toggle stay reachable in the dock */
 @media (max-width: 540px) {
-  .site-header {
-    gap: 0.7rem;
-    padding: 0.9rem 0.9rem;
-  }
-  .brand { font-size: 0.8rem; letter-spacing: 0.08em; }
-  .nav { gap: 0.8rem; }
-  .nav a { font-size: 0.7rem; letter-spacing: 0.06em; }
-  .controls { gap: 0; }
-  .ctl { font-size: 0.72rem; padding: 0.25rem 0.3rem; }
+  .dock { gap: 0.4rem; padding: 0.45rem 0.5rem 0.45rem 0.8rem; }
+  [dir='rtl'] .dock { padding: 0.45rem 0.8rem 0.45rem 0.5rem; }
+  .brand-full { display: none; }
+  .brand-mono { display: inline; }
+  .nav a { font-size: 0.68rem; letter-spacing: 0.04em; padding: 0.35rem 0.5rem; }
+  .ctl { font-size: 0.68rem; padding: 0.35rem 0.38rem; }
+  .dock-sep { display: none; }
 }
 </style>

@@ -3,12 +3,45 @@
 // stats strip → capabilities → one full-screen chapter per project (image is
 // the protagonist, parallax on scroll) → giant contact CTA. All monochrome;
 // the WebGL field behind provides the atmosphere.
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { projects } from '../data/projects.js'
 import { vReveal } from '../reveal.js'
 
 const { t } = useI18n()
+
+// Hero slab: tilts toward the cursor; the specular sheen slides with it.
+// Smoothed in rAF; inert for touch and reduced-motion users.
+const slab = ref(null)
+const slabTarget = { rx: 0, ry: 0, sx: 50 }
+const slabCur = { rx: 0, ry: 0, sx: 50 }
+let slabRaf = 0
+function slabTick() {
+  slabCur.rx += (slabTarget.rx - slabCur.rx) * 0.09
+  slabCur.ry += (slabTarget.ry - slabCur.ry) * 0.09
+  slabCur.sx += (slabTarget.sx - slabCur.sx) * 0.09
+  const el = slab.value
+  if (el) {
+    el.style.transform = `perspective(1100px) rotateX(${slabCur.rx.toFixed(2)}deg) rotateY(${slabCur.ry.toFixed(2)}deg)`
+    el.style.setProperty('--shx', slabCur.sx.toFixed(1) + '%')
+  }
+  const settled = Math.abs(slabTarget.rx - slabCur.rx) < 0.01 && Math.abs(slabTarget.ry - slabCur.ry) < 0.01
+  slabRaf = settled ? 0 : requestAnimationFrame(slabTick)
+}
+function slabMove(e) {
+  if (reduced || !matchMedia('(hover: hover)').matches) return
+  const r = e.currentTarget.getBoundingClientRect()
+  const px = (e.clientX - r.left) / r.width - 0.5
+  const py = (e.clientY - r.top) / r.height - 0.5
+  slabTarget.ry = px * 7
+  slabTarget.rx = py * -6
+  slabTarget.sx = 50 + px * 90
+  if (!slabRaf) slabRaf = requestAnimationFrame(slabTick)
+}
+function slabLeave() {
+  slabTarget.rx = 0; slabTarget.ry = 0; slabTarget.sx = 50
+  if (!slabRaf) slabRaf = requestAnimationFrame(slabTick)
+}
 
 const words = computed(() => t('hero.tagline').split(' '))
 const statKeys = ['years', 'langs', 'dirs', 'teams']
@@ -42,17 +75,23 @@ onMounted(() => {
     parallax()
   }
 })
-onBeforeUnmount(() => removeEventListener('scroll', onScroll))
+onBeforeUnmount(() => {
+  removeEventListener('scroll', onScroll)
+  cancelAnimationFrame(slabRaf)
+})
 </script>
 
 <template>
   <div class="home">
   <!-- Single root div: required by the route Transition in App.vue.
-       Chapter 0 — hero -->
-  <section class="hero">
-    <p class="t-label" v-reveal>{{ t('hero.greeting') }}</p>
-    <h1 class="name t-display t-grad" v-reveal="80">{{ t('hero.name') }}</h1>
-    <p class="role" v-reveal="200">{{ t('hero.role') }}</p>
+       Chapter 0 — hero: the name on a giant glass slab that tilts toward
+       the cursor, specular sheen sliding across as it moves -->
+  <section class="hero" @pointermove="slabMove" @pointerleave="slabLeave">
+    <div ref="slab" class="hero-slab glass">
+      <p class="t-label" v-reveal>{{ t('hero.greeting') }}</p>
+      <h1 class="name t-display t-grad" v-reveal="80">{{ t('hero.name') }}</h1>
+      <p class="role" v-reveal="200">{{ t('hero.role') }}</p>
+    </div>
     <div class="cue" aria-hidden="true">
       <span class="t-label">{{ t('hero.scroll') }}</span>
       <i class="cue-line"></i>
@@ -148,15 +187,40 @@ section { position: relative; }
   padding: 0 1.5rem;
 }
 
+/* the slab: one huge pane of glass holding the name, tilting in 3D */
+.hero-slab {
+  position: relative;
+  max-width: min(94vw, 1200px);
+  padding: clamp(2rem, 5vh, 3.6rem) clamp(1.6rem, 7vw, 6rem) clamp(2.4rem, 6vh, 4rem);
+  border-radius: 44px;
+  overflow: hidden;
+  will-change: transform;
+  --shx: 50%;
+}
+
+/* cursor-driven specular sheen sliding across the slab */
+.hero-slab::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(105deg,
+    transparent calc(var(--shx) - 20%),
+    rgba(255, 255, 255, 0.10) var(--shx),
+    transparent calc(var(--shx) + 20%));
+}
+
 .name {
-  font-size: clamp(4.5rem, 19vw, 17rem);
-  margin: 1.2rem 0 1.6rem;
+  font-size: clamp(3.6rem, 14vw, 12.5rem);
+  margin: 1.1rem 0 1.4rem;
 }
 
 .role {
   font-size: clamp(0.95rem, 2vw, 1.25rem);
   color: var(--fg-soft);
   max-width: 44rem;
+  margin-inline: auto;
 }
 
 .cue {

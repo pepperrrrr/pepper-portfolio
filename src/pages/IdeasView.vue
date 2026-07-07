@@ -142,7 +142,7 @@ onMounted(() => {
       <p class="lock-prompt">{{ t('ideas.lockPrompt') }}</p>
       <div class="lock-row">
         <input v-model="passInput" type="password" class="add-input" :placeholder="t('ideas.passcode')"
-          autocomplete="current-password" />
+          :aria-label="t('ideas.passcode')" autocomplete="current-password" />
         <button type="submit" class="link-line add-btn" :disabled="!passInput.trim() || loading">
           {{ loading ? t('ideas.loading') : t('ideas.unlock') }} →
         </button>
@@ -175,7 +175,8 @@ onMounted(() => {
       <p v-if="error" class="lock-err feed-err">{{ error }}</p>
 
       <form class="add" @submit.prevent="add">
-        <input v-model="text" class="add-input" :placeholder="t('ideas.placeholder')" maxlength="140" :disabled="busy" />
+        <input v-model="text" class="add-input" :placeholder="t('ideas.placeholder')"
+          :aria-label="t('ideas.placeholder')" maxlength="140" :disabled="busy" />
         <button type="submit" class="link-line add-btn" :disabled="!text.trim() || busy">{{ t('ideas.add') }} ✦</button>
       </form>
 

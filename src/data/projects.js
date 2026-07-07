@@ -26,7 +26,7 @@ export const projects = [
     tags: ['Vue 3', 'TypeScript', 'PWA', 'IndexedDB', 'GSAP', 'WebGL'],
     link: 'https://github.com/pepperrrrr/pet-health-keeper',
     demo: 'https://pepperrrrr.github.io/pet-health-keeper/',
-    image: '/projects/pet-health-keeper.png',
+    image: '/projects/pet-health-keeper.jpg',
   },
   {
     slug: 'souq-rtl-theme',
@@ -43,7 +43,7 @@ export const projects = [
     tags: ['React', 'Three.js', 'react-three-fiber', 'WebGL'],
     link: 'https://github.com/pepperrrrr/cosmic-explorer',
     demo: 'https://pepper-cosmic-explorer.netlify.app',
-    image: '/projects/cosmic-explorer.png',
+    image: '/projects/cosmic-explorer.jpg',
   },
 ]
 

@@ -46,7 +46,9 @@ onBeforeUnmount(() => removeEventListener('scroll', onScroll))
 </script>
 
 <template>
-  <!-- Chapter 0 — hero -->
+  <div class="home">
+  <!-- Single root div: required by the route Transition in App.vue.
+       Chapter 0 — hero -->
   <section class="hero">
     <p class="t-label" v-reveal>{{ t('hero.greeting') }}</p>
     <h1 class="name t-display t-grad" v-reveal="80">{{ t('hero.name') }}</h1>
@@ -125,6 +127,7 @@ onBeforeUnmount(() => removeEventListener('scroll', onScroll))
       <a class="link-line" href="https://github.com/pepperrrrr" target="_blank" rel="noopener">GitHub</a>
     </div>
   </section>
+  </div>
 </template>
 
 <style scoped>

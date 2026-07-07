@@ -22,9 +22,9 @@ onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 const languages = [
-  { code: 'en', label: 'EN' },
-  { code: 'zh', label: '中' },
-  { code: 'ar', label: 'ع' },
+  { code: 'en', label: 'EN', name: 'English' },
+  { code: 'zh', label: '中', name: '中文' },
+  { code: 'ar', label: 'ع', name: 'العربية' },
 ]
 
 function applyDirection() {
@@ -63,16 +63,20 @@ onMounted(applyTheme)
       <RouterLink :to="{ name: 'about' }" class="link-line">{{ t('nav.about') }}</RouterLink>
     </nav>
     <div class="controls">
-      <button class="ctl" @click="toggleTheme" :aria-label="'theme: ' + theme">◐</button>
+      <button class="ctl" @click="toggleTheme" aria-label="Toggle theme" :aria-pressed="theme === 'dark'">◐</button>
       <button v-for="l in languages" :key="l.code" class="ctl" :class="{ active: locale === l.code }"
-        @click="setLang(l.code)">
+        :aria-label="l.name" :aria-pressed="locale === l.code" @click="setLang(l.code)">
         {{ l.label }}
       </button>
     </div>
   </header>
 
   <main class="shell">
-    <RouterView />
+    <RouterView v-slot="{ Component, route }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" :key="route.fullPath" />
+      </Transition>
+    </RouterView>
   </main>
 
   <footer class="site-footer">
@@ -154,4 +158,32 @@ onMounted(applyTheme)
   letter-spacing: 0.06em;
 }
 [dir='rtl'] .site-footer { letter-spacing: normal; }
+
+/* Route crossfade — quick and quiet, skipped for reduced motion */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.26s var(--ease);
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active { transition: none; }
+}
+
+/* Narrow screens: tighten every gap so all three languages and the theme
+   toggle stay reachable — nothing may fall off the edge */
+@media (max-width: 540px) {
+  .site-header {
+    gap: 0.7rem;
+    padding: 0.9rem 0.9rem;
+  }
+  .brand { font-size: 0.8rem; letter-spacing: 0.08em; }
+  .nav { gap: 0.8rem; }
+  .nav a { font-size: 0.7rem; letter-spacing: 0.06em; }
+  .controls { gap: 0; }
+  .ctl { font-size: 0.72rem; padding: 0.25rem 0.3rem; }
+}
 </style>

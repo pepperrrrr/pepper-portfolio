@@ -118,6 +118,7 @@ function toggle(star) {
 // The SVG works in real pixels (measured from the sky pane), not a stretched
 // 0-100 box — non-uniform scaling breaks dash-based draw animation.
 const skyEl = ref(null)
+const skyCanvas = ref(null)
 const skySize = ref({ w: 0, h: 0 })
 let skyObserver = null
 watch(skyEl, (el) => {
@@ -125,10 +126,51 @@ watch(skyEl, (el) => {
   if (!el) return
   skyObserver = new ResizeObserver(([e]) => {
     skySize.value = { w: e.contentRect.width, h: e.contentRect.height }
+    paintSky()
   })
   skyObserver.observe(el)
 })
-onBeforeUnmount(() => skyObserver?.disconnect())
+
+// A dense field of faint micro-stars painted once per resize/theme change —
+// this is what makes the pane read as "sky" rather than an empty box.
+function paintSky() {
+  const cv = skyCanvas.value
+  const el = skyEl.value
+  if (!cv || !el) return
+  const dpr = Math.min(devicePixelRatio, 2)
+  const w = el.clientWidth
+  const h = el.clientHeight
+  cv.width = w * dpr
+  cv.height = h * dpr
+  const ctx = cv.getContext('2d')
+  ctx.scale(dpr, dpr)
+  ctx.clearRect(0, 0, w, h)
+  const dark = document.documentElement.getAttribute('data-theme') !== 'light'
+  const count = Math.round((w * h) / 3800)
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * w
+    const y = Math.random() * h
+    const r = Math.random() ** 2 * 1.3 + 0.3
+    const hue = 200 + Math.random() * 140
+    const a = 0.1 + Math.random() * (dark ? 0.5 : 0.3)
+    ctx.fillStyle = dark
+      ? `hsla(${hue} 60% ${75 + Math.random() * 20}% / ${a})`
+      : `hsla(${hue} 45% 26% / ${a})`
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, 6.283)
+    ctx.fill()
+  }
+}
+
+let themeObserver = null
+onMounted(() => {
+  themeObserver = new MutationObserver(paintSky)
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+})
+onBeforeUnmount(() => {
+  skyObserver?.disconnect()
+  themeObserver?.disconnect()
+})
 
 // Constellation thread: stars are chained nearest-neighbour (like a real
 // star chart — no wild jumps across the sky), then the chain is smoothed
@@ -198,7 +240,8 @@ onMounted(() => {
 
     <!-- The sky -->
     <template v-else>
-      <div ref="skyEl" class="sky glass" v-reveal>
+      <div ref="skyEl" class="sky" v-reveal>
+        <canvas ref="skyCanvas" class="sky-canvas" aria-hidden="true"></canvas>
         <!-- the thread redraws itself whenever the constellation changes -->
         <svg v-if="linePath" class="lines" :viewBox="`0 0 ${skySize.w} ${skySize.h}`" aria-hidden="true">
           <path :key="ideas.length" class="thread" :d="linePath" pathLength="1" />
@@ -282,27 +325,48 @@ onMounted(() => {
 
 .feed-err { margin: 1rem 0 0; }
 
-/* ---------- the sky: one large glass pane over the cosmos ---------- */
+/* ---------- the sky: a clear window onto the living cosmos ----------
+   Only a hair of blur, so the WebGL particle field behind the page shows
+   through as real depth. A framed edge keeps it reading as a pane. */
 .sky {
   position: relative;
   height: min(62vh, 640px);
   border-radius: var(--r-lg);
   overflow: hidden;
+  border: 1px solid var(--stroke);
+  -webkit-backdrop-filter: blur(3px) saturate(125%) brightness(0.92);
+  backdrop-filter: blur(3px) saturate(125%) brightness(0.92);
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
+}
+[data-theme='light'] .sky {
+  -webkit-backdrop-filter: blur(3px) saturate(125%) brightness(1.04);
+  backdrop-filter: blur(3px) saturate(125%) brightness(1.04);
 }
 
-/* a faint glow pooled at the sky's heart */
+/* the dense micro-star field painted into the pane */
+.sky-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* a faint glow pooled at the sky's heart, above the star dust */
 .sky::before {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
   pointer-events: none;
   background: radial-gradient(60% 70% at 50% 42%,
-    color-mix(in srgb, var(--fg) 5%, transparent), transparent 70%);
+    color-mix(in srgb, var(--fg) 6%, transparent), transparent 70%);
 }
 
 .lines {
   position: absolute;
   inset: 0;
+  z-index: 2;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -325,6 +389,7 @@ onMounted(() => {
 
 .star {
   position: absolute;
+  z-index: 3;
   width: 28px;
   height: 28px;
   transform: translate(-50%, -50%);

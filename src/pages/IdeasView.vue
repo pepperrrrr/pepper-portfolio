@@ -143,7 +143,7 @@ onMounted(() => {
       <div class="lock-row">
         <input v-model="passInput" type="password" class="add-input" :placeholder="t('ideas.passcode')"
           :aria-label="t('ideas.passcode')" autocomplete="current-password" />
-        <button type="submit" class="link-line add-btn" :disabled="!passInput.trim() || loading">
+        <button type="submit" class="add-btn" :disabled="!passInput.trim() || loading">
           {{ loading ? t('ideas.loading') : t('ideas.unlock') }} →
         </button>
       </div>
@@ -169,7 +169,7 @@ onMounted(() => {
       <div v-if="selected" class="detail glass">
         <span class="t-label">{{ df.format(selected.date) }}</span>
         <p class="detail-text">{{ selected.text }}</p>
-        <button class="link-line detail-del" :disabled="busy" @click="remove(selected.id)">{{ t('ideas.remove') }}</button>
+        <button class="detail-del" :disabled="busy" @click="remove(selected.id)">{{ t('ideas.remove') }}</button>
       </div>
 
       <p v-if="error" class="lock-err feed-err">{{ error }}</p>
@@ -177,7 +177,7 @@ onMounted(() => {
       <form class="add" @submit.prevent="add">
         <input v-model="text" class="add-input" :placeholder="t('ideas.placeholder')"
           :aria-label="t('ideas.placeholder')" maxlength="140" :disabled="busy" />
-        <button type="submit" class="link-line add-btn" :disabled="!text.trim() || busy">{{ t('ideas.add') }} ✦</button>
+        <button type="submit" class="add-btn" :disabled="!text.trim() || busy">{{ t('ideas.add') }} ✦</button>
       </form>
 
       <button class="lock-btn t-label" @click="lock">{{ t('ideas.lock') }}</button>

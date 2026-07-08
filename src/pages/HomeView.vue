@@ -300,12 +300,14 @@ section { position: relative; }
   gap: 0.5rem;
   padding: 1.8rem clamp(1.2rem, 2vw, 2rem);
   border-inline-start: 1px solid var(--line);
+  min-width: 0; /* let grid cells shrink — values wrap instead of spilling */
 }
 .stat:first-child { border-inline-start: 0; }
 
 .stat-v {
-  font-size: clamp(1.7rem, 3.4vw, 2.8rem);
-  white-space: nowrap;
+  font-size: clamp(1.5rem, 2.6vw, 2.4rem);
+  line-height: 1.15;
+  overflow-wrap: break-word;
 }
 
 .stat-l {

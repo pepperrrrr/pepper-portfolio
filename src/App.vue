@@ -38,6 +38,26 @@ function setLang(code) {
 watch(locale, applyDirection)
 onMounted(applyDirection)
 
+// Dock hides when scrolling down, returns when scrolling up — it never
+// collides with the full-bleed type scrolling underneath it.
+const dockHidden = ref(false)
+let lastY = 0
+function onScrollDock() {
+  const y = scrollY
+  if (y < 140) {
+    dockHidden.value = false // always visible near the top
+    lastY = y
+    return
+  }
+  const dy = y - lastY
+  if (Math.abs(dy) > 4) {
+    dockHidden.value = dy > 0 // down = hide, up = show
+    lastY = y
+  }
+}
+onMounted(() => addEventListener('scroll', onScrollDock, { passive: true }))
+onBeforeUnmount(() => removeEventListener('scroll', onScrollDock))
+
 // Light / dark theme
 const theme = ref(localStorage.getItem('theme') || 'dark')
 function applyTheme() { document.documentElement.setAttribute('data-theme', theme.value) }
@@ -55,7 +75,7 @@ onMounted(applyTheme)
   <Cats v-if="showCats" />
 
   <!-- Floating glass dock — refracts the particle field as the page scrolls -->
-  <header class="dock glass">
+  <header class="dock glass" :class="{ 'dock-hidden': dockHidden }">
     <RouterLink :to="{ name: 'home' }" class="brand"><span class="brand-full">{{ t('hero.name') }}</span><span
         class="brand-mono" aria-hidden="true">P</span></RouterLink>
     <nav class="nav">
@@ -105,6 +125,17 @@ onMounted(applyTheme)
   border-radius: var(--r-pill);
   color: var(--fg);
   max-width: calc(100vw - 20px);
+  transition: transform 0.5s var(--ease), opacity 0.4s;
+}
+
+.dock-hidden {
+  transform: translate(-50%, -180%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock { transition: none; }
 }
 [dir='rtl'] .dock { padding: 0.55rem 1.1rem 0.55rem 0.6rem; }
 

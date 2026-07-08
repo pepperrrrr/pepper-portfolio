@@ -3,7 +3,7 @@
 // function backed by Netlify Blobs. A shared passcode (checked server-side)
 // gates both reading and writing, so the sky stays private. The passcode is
 // remembered locally so each of Pepper's devices only asks once.
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { vReveal } from '../reveal.js'
 
@@ -115,7 +115,52 @@ function toggle(star) {
   selected.value = selected.value?.id === star.id ? null : star
 }
 
-const points = computed(() => ideas.value.map((i) => `${i.x},${i.y}`).join(' '))
+// The SVG works in real pixels (measured from the sky pane), not a stretched
+// 0-100 box — non-uniform scaling breaks dash-based draw animation.
+const skyEl = ref(null)
+const skySize = ref({ w: 0, h: 0 })
+let skyObserver = null
+watch(skyEl, (el) => {
+  skyObserver?.disconnect()
+  if (!el) return
+  skyObserver = new ResizeObserver(([e]) => {
+    skySize.value = { w: e.contentRect.width, h: e.contentRect.height }
+  })
+  skyObserver.observe(el)
+})
+onBeforeUnmount(() => skyObserver?.disconnect())
+
+// Constellation thread: stars are chained nearest-neighbour (like a real
+// star chart — no wild jumps across the sky), then the chain is smoothed
+// into a Catmull-Rom spline through every star.
+const linePath = computed(() => {
+  const { w, h } = skySize.value
+  if (ideas.value.length < 2 || !w || !h) return ''
+  const rest = [...ideas.value]
+  const ordered = [rest.shift()]
+  while (rest.length) {
+    const last = ordered[ordered.length - 1]
+    let best = 0
+    let bestD = Infinity
+    rest.forEach((p, i) => {
+      const d = (p.x - last.x) ** 2 + (p.y - last.y) ** 2
+      if (d < bestD) { bestD = d; best = i }
+    })
+    ordered.push(rest.splice(best, 1)[0])
+  }
+  const p = ordered.map((i) => [(i.x / 100) * w, (i.y / 100) * h])
+  let d = `M ${p[0][0].toFixed(1)},${p[0][1].toFixed(1)}`
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[i - 1] || p[i]
+    const p1 = p[i]
+    const p2 = p[i + 1]
+    const p3 = p[i + 2] || p2
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6]
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6]
+    d += ` C ${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`
+  }
+  return d
+})
 
 const df = computed(() => {
   const tag = locale.value === 'zh' ? 'zh-CN' : locale.value === 'ar' ? 'ar' : 'en'
@@ -153,9 +198,10 @@ onMounted(() => {
 
     <!-- The sky -->
     <template v-else>
-      <div class="sky glass" v-reveal>
-        <svg v-if="ideas.length > 1" class="lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <polyline :points="points" />
+      <div ref="skyEl" class="sky glass" v-reveal>
+        <!-- the thread redraws itself whenever the constellation changes -->
+        <svg v-if="linePath" class="lines" :viewBox="`0 0 ${skySize.w} ${skySize.h}`" aria-hidden="true">
+          <path :key="ideas.length" class="thread" :d="linePath" pathLength="1" />
         </svg>
 
         <button v-for="i in ideas" :key="i.id" class="star" :class="{ sel: selected?.id === i.id, big: i.s > 6 }"
@@ -166,7 +212,8 @@ onMounted(() => {
         <p v-else-if="!ideas.length" class="empty-msg">{{ t('ideas.empty') }}</p>
       </div>
 
-      <div v-if="selected" class="detail glass">
+      <div v-if="selected" class="detail glass" :style="{ '--star-h': selected.h ?? 210 }">
+        <i class="detail-dot" aria-hidden="true"></i>
         <span class="t-label">{{ df.format(selected.date) }}</span>
         <p class="detail-text">{{ selected.text }}</p>
         <button class="detail-del" :disabled="busy" @click="remove(selected.id)">{{ t('ideas.remove') }}</button>
@@ -243,6 +290,16 @@ onMounted(() => {
   overflow: hidden;
 }
 
+/* a faint glow pooled at the sky's heart */
+.sky::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 70% at 50% 42%,
+    color-mix(in srgb, var(--fg) 5%, transparent), transparent 70%);
+}
+
 .lines {
   position: absolute;
   inset: 0;
@@ -251,11 +308,19 @@ onMounted(() => {
   pointer-events: none;
 }
 
-.lines polyline {
+/* the thread draws itself from the first star to the last */
+.thread {
   fill: none;
-  stroke: var(--line);
+  stroke: color-mix(in srgb, var(--fg) 32%, transparent);
   stroke-width: 1;
-  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 2.4s var(--ease) 0.2s forwards;
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
 }
 
 .star {
@@ -267,8 +332,14 @@ onMounted(() => {
   padding: 0;
   background: transparent;
   cursor: pointer;
-  animation: born 0.9s var(--ease);
+  /* each star drifts gently on its own rhythm */
+  animation: floaty calc(var(--tw) * 2.6) ease-in-out var(--d) infinite alternate;
   --star-c: hsl(var(--star-h) 90% 72%);
+}
+
+@keyframes floaty {
+  from { transform: translate(-50%, calc(-50% - 3px)); }
+  to { transform: translate(-50%, calc(-50% + 3px)); }
 }
 :global([data-theme='light']) .star {
   --star-c: hsl(var(--star-h) 75% 42%);
@@ -284,7 +355,10 @@ onMounted(() => {
   border-radius: 50%;
   background: var(--star-c);
   box-shadow: 0 0 calc(var(--s) * 2.4) 0 var(--star-c);
-  animation: twinkle var(--tw) ease-in-out var(--d) infinite;
+  /* born runs once (scale-in pop); twinkle keeps breathing after */
+  animation:
+    born 0.9s var(--ease),
+    twinkle var(--tw) ease-in-out var(--d) infinite;
 }
 
 .star.big::after {
@@ -315,11 +389,12 @@ onMounted(() => {
 }
 
 @keyframes born {
-  from { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  from { transform: scale(0); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .star, .star::before, .star.big::after { animation: none; }
+  .thread { animation: none; stroke-dashoffset: 0; }
 }
 
 .empty-msg {
@@ -333,15 +408,29 @@ onMounted(() => {
   text-align: center;
 }
 
-/* ---------- selected idea ---------- */
+/* ---------- selected idea: chip lit by that star's own colour ---------- */
 .detail {
   display: flex;
   align-items: baseline;
-  gap: 1.4rem;
+  gap: 1.1rem;
   flex-wrap: wrap;
   margin-top: 1.4rem;
   padding: 1.3rem 1.6rem;
   border-radius: var(--r-md);
+  border-color: color-mix(in srgb, hsl(var(--star-h) 80% 65%) 35%, var(--stroke));
+}
+
+.detail-dot {
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--star-h) 88% 70%);
+  box-shadow: 0 0 12px 0 hsl(var(--star-h) 88% 70%);
+}
+[data-theme='light'] .detail-dot {
+  background: hsl(var(--star-h) 75% 44%);
+  box-shadow: 0 0 10px 0 hsl(var(--star-h) 75% 60%);
 }
 
 .detail-text {
